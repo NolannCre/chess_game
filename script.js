@@ -9,6 +9,7 @@ const dayLabels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 let events = {};
 let selectedColor = 'default';
 let eventIdCounter = 0;
+let touchStartTime = 0;
 
 const colorSchemes = {
     default: 'linear-gradient(45deg, #667eea, #764ba2)',
@@ -19,8 +20,89 @@ const colorSchemes = {
     purple: 'linear-gradient(45deg, #845ef7, #7048e8)'
 };
 
+// Fonction utilitaire pour les notifications mobiles
+function showNotification(message, type = 'info') {
+    // Créer l'élément de notification s'il n'existe pas
+    let notificationContainer = document.getElementById('notification-container');
+    if (!notificationContainer) {
+        notificationContainer = document.createElement('div');
+        notificationContainer.id = 'notification-container';
+        notificationContainer.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            max-width: 300px;
+        `;
+        document.body.appendChild(notificationContainer);
+    }
+
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        background: ${type === 'error' ? '#ff6b6b' : type === 'success' ? '#51cf66' : '#339af0'};
+        color: white;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        transform: translateX(320px);
+        transition: transform 0.3s ease;
+        font-size: 14px;
+        word-wrap: break-word;
+    `;
+    notification.textContent = message;
+    
+    notificationContainer.appendChild(notification);
+    
+    // Animation d'entrée
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+    }, 10);
+    
+    // Auto-suppression après 3 secondes
+    setTimeout(() => {
+        notification.style.transform = 'translateX(320px)';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Fonction utilitaire pour gérer les événements tactiles et clics
+function addTouchClickHandler(element, callback) {
+    if (!element) return;
+    
+    // Gestionnaire pour les événements tactiles
+    element.addEventListener('touchstart', function(e) {
+        touchStartTime = Date.now();
+    }, { passive: true });
+    
+    element.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        const touchDuration = Date.now() - touchStartTime;
+        
+        // Éviter les déclenchements accidentels (tap trop rapide ou trop long)
+        if (touchDuration > 50 && touchDuration < 500) {
+            callback(e);
+        }
+    });
+    
+    // Gestionnaire pour les clics classiques (desktop)
+    element.addEventListener('click', function(e) {
+        // Éviter le double déclenchement sur mobile
+        if (e.detail === 0) return; // Événement déclenché par le clavier
+        callback(e);
+    });
+}
+
 function initializeSchedule() {
     const grid = document.getElementById('scheduleGrid');
+    if (!grid) {
+        console.error('Element scheduleGrid non trouvé');
+        return;
+    }
 
     // Header vide pour le coin
     grid.innerHTML = '<div class="time-header"></div>';
@@ -53,30 +135,65 @@ function initializeSchedule() {
 }
 
 function addEvent() {
-    const title = document.getElementById('eventTitle').value.trim();
-    const startTime = document.getElementById('startTime').value;
-    const endTime = document.getElementById('endTime').value;
+    console.log('addEvent appelée'); // Debug mobile
+    
+    const titleElement = document.getElementById('eventTitle');
+    const startTimeElement = document.getElementById('startTime');
+    const endTimeElement = document.getElementById('endTime');
+    
+    if (!titleElement || !startTimeElement || !endTimeElement) {
+        console.error('Éléments du formulaire non trouvés');
+        showNotification('Erreur: Éléments du formulaire manquants', 'error');
+        return;
+    }
+    
+    const title = titleElement.value.trim();
+    const startTime = startTimeElement.value;
+    const endTime = endTimeElement.value;
 
-    // Récupérer les jours sélectionnés
+    console.log('Données du formulaire:', { title, startTime, endTime }); // Debug
+
+    // Récupérer les jours sélectionnés avec une approche plus robuste
     const selectedDays = [];
-    document.querySelectorAll('.days-selector input[type="checkbox"]:checked').forEach(checkbox => {
-        selectedDays.push(checkbox.value);
+    const checkboxes = document.querySelectorAll('.days-selector input[type="checkbox"]');
+    
+    checkboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            selectedDays.push(checkbox.value);
+            console.log('Jour sélectionné:', checkbox.value); // Debug
+        }
     });
 
-    if (!title || !startTime || !endTime) {
-        console.log('Veuillez remplir tous les champs');
+    // Validations avec notifications visuelles
+    if (!title) {
+        showNotification('Veuillez saisir un titre pour l\'événement', 'error');
+        titleElement.focus();
+        return;
+    }
+
+    if (!startTime) {
+        showNotification('Veuillez sélectionner une heure de début', 'error');
+        startTimeElement.focus();
+        return;
+    }
+
+    if (!endTime) {
+        showNotification('Veuillez sélectionner une heure de fin', 'error');
+        endTimeElement.focus();
         return;
     }
 
     if (selectedDays.length === 0) {
-        colsole.log('Veuillez sélectionner au moins un jour');
+        showNotification('Veuillez sélectionner au moins un jour', 'error');
         return;
     }
 
     if (startTime >= endTime) {
-        console.log('L\'heure de fin doit être après l\'heure de début');
+        showNotification('L\'heure de fin doit être après l\'heure de début', 'error');
         return;
     }
+
+    console.log('Validation passée, ajout des événements...'); // Debug
 
     // Ajouter l'événement pour chaque jour sélectionné
     selectedDays.forEach(day => {
@@ -96,21 +213,24 @@ function addEvent() {
         }
 
         events[day].push(event);
+        console.log('Événement ajouté pour', day, ':', event); // Debug
     });
 
     // Vider le formulaire
-    document.getElementById('eventTitle').value = '';
-    document.getElementById('startTime').value = '';
-    document.getElementById('endTime').value = '';
+    titleElement.value = '';
+    startTimeElement.value = '';
+    endTimeElement.value = '';
 
     // Décocher toutes les cases
-    document.querySelectorAll('.days-selector input[type="checkbox"]').forEach(checkbox => {
+    checkboxes.forEach(checkbox => {
         checkbox.checked = false;
     });
 
     renderEvents();
     updateStats();
     updateNextEvent();
+    
+    showNotification(`Événement "${title}" ajouté avec succès !`, 'success');
 }
 
 function renderEvents() {
@@ -130,7 +250,6 @@ function renderEvents() {
             const endHour = parseInt(event.endTime.split(':')[0]);
             const endMinute = parseInt(event.endTime.split(':')[1]);
 
-            // CORRECTION PRINCIPALE : Vérifier que les heures sont dans timeSlots et créer des blocs pour chaque heure
             const availableHours = timeSlots.map(slot => parseInt(slot.split(':')[0]));
             
             // Trouver toutes les heures concernées par cet événement
@@ -146,18 +265,17 @@ function renderEvents() {
                 eventHours.push(endHour);
             }
 
-            console.log(`Événement "${event.title}" : heures ${eventHours.join(', ')}`); // Debug
-
             // Créer un bloc pour chaque heure
             eventHours.forEach((hour, index) => {
                 const timeSlot = hour.toString().padStart(2, '0') + ':00';
                 const cell = document.querySelector(`[data-day="${day}"][data-time="${timeSlot}"]`);
                 
-                console.log(`Recherche cellule pour ${day} à ${timeSlot}:`, cell); // Debug
-                
                 if (cell) {
                     const eventElement = document.createElement('div');
                     eventElement.className = 'event';
+                    
+                    // Améliorer la taille des éléments tactiles
+                    eventElement.style.minHeight = '44px'; // Taille recommandée pour les éléments tactiles
                     
                     const isFirstSegment = (index === 0);
                     const isLastSegment = (index === eventHours.length - 1);
@@ -176,20 +294,18 @@ function renderEvents() {
 
                     // Contenu différent selon le segment
                     if (isFirstSegment && !isLastSegment) {
-                        // Premier segment d'un événement multi-créneaux
                         eventElement.innerHTML = `
                             <input type="checkbox" class="event-checkbox" ${event.completed ? 'checked' : ''} 
-                                   onchange="toggleEventCompletion('${event.id}', '${day}')">
+                                   data-event-id="${event.id}" data-day="${day}">
                             <div class="event-content">
                                 <div class="event-title">${event.title}</div>
                                 <div class="event-time">${event.startTime} →</div>
                             </div>
-                            <button class="event-delete" onclick="deleteEvent('${event.id}', '${day}')">×</button>
+                            <button class="event-delete" data-event-id="${event.id}" data-day="${day}" 
+                                    style="min-width: 44px; min-height: 44px; padding: 8px;">×</button>
                         `;
                     } else if (isLastSegment && !isFirstSegment) {
-                        // Dernier segment
                         if (hour === endHour && endMinute > 0) {
-                            // Segment partiel pour les minutes
                             const minuteHeight = Math.max(20, (endMinute / 60) * 46);
                             eventElement.style.height = `${minuteHeight}px`;
                             eventElement.style.maxHeight = `${minuteHeight}px`;
@@ -202,7 +318,6 @@ function renderEvents() {
                             </div>
                         `;
                     } else if (!isFirstSegment && !isLastSegment) {
-                        // Segments intermédiaires
                         eventElement.innerHTML = `
                             <div class="event-content continuation">
                                 <div class="event-continuation">↓</div>
@@ -210,22 +325,35 @@ function renderEvents() {
                             </div>
                         `;
                     } else {
-                        // Événement d'une seule heure
                         eventElement.innerHTML = `
                             <input type="checkbox" class="event-checkbox" ${event.completed ? 'checked' : ''} 
-                                   onchange="toggleEventCompletion('${event.id}', '${day}')">
+                                   data-event-id="${event.id}" data-day="${day}">
                             <div class="event-content">
                                 <div class="event-title">${event.title}</div>
                                 <div class="event-time">${event.startTime} - ${event.endTime}</div>
                             </div>
-                            <button class="event-delete" onclick="deleteEvent('${event.id}', '${day}')">×</button>
+                            <button class="event-delete" data-event-id="${event.id}" data-day="${day}"
+                                    style="min-width: 44px; min-height: 44px; padding: 8px;">×</button>
                         `;
                     }
 
                     cell.appendChild(eventElement);
-                    console.log(`Bloc ajouté pour ${day} à ${timeSlot}`); // Debug
-                } else {
-                    console.log(`Cellule non trouvée pour ${day} à ${timeSlot}`); // Debug
+                    
+                    // Ajouter les gestionnaires d'événements tactiles pour les éléments interactifs
+                    const checkbox = eventElement.querySelector('.event-checkbox');
+                    const deleteBtn = eventElement.querySelector('.event-delete');
+                    
+                    if (checkbox) {
+                        addTouchClickHandler(checkbox, function() {
+                            toggleEventCompletion(checkbox.dataset.eventId, checkbox.dataset.day);
+                        });
+                    }
+                    
+                    if (deleteBtn) {
+                        addTouchClickHandler(deleteBtn, function() {
+                            deleteEvent(deleteBtn.dataset.eventId, deleteBtn.dataset.day);
+                        });
+                    }
                 }
             });
         });
@@ -233,13 +361,16 @@ function renderEvents() {
 }
 
 function deleteEvent(eventId, day) {
-    events[day] = events[day].filter(event => event.id !== eventId);
-    if (events[day].length === 0) {
-        delete events[day];
+    if (confirm('Êtes-vous sûr de vouloir supprimer cet événement ?')) {
+        events[day] = events[day].filter(event => event.id !== eventId);
+        if (events[day].length === 0) {
+            delete events[day];
+        }
+        renderEvents();
+        updateStats();
+        updateNextEvent();
+        showNotification('Événement supprimé', 'success');
     }
-    renderEvents();
-    updateStats();
-    updateNextEvent();
 }
 
 function toggleEventCompletion(eventId, day) {
@@ -249,6 +380,10 @@ function toggleEventCompletion(eventId, day) {
         renderEvents();
         updateStats();
         updateNextEvent();
+        showNotification(
+            event.completed ? 'Événement marqué comme terminé' : 'Événement marqué comme non terminé', 
+            'success'
+        );
     }
 }
 
@@ -258,6 +393,7 @@ function clearSchedule() {
         renderEvents();
         updateStats();
         updateNextEvent();
+        showNotification('Emploi du temps effacé', 'success');
     }
 }
 
@@ -270,16 +406,21 @@ function updateStats() {
     // Simuler "aujourd'hui" avec lundi
     const todayEvents = events['lundi'] ? events['lundi'].length : 0;
 
-    document.getElementById('totalEvents').textContent = totalEvents;
-    document.getElementById('completedEvents').textContent = completedEvents;
-    document.getElementById('todayEvents').textContent = todayEvents;
-    document.getElementById('busyDays').textContent = busyDays;
+    const totalEventsEl = document.getElementById('totalEvents');
+    const completedEventsEl = document.getElementById('completedEvents');
+    const todayEventsEl = document.getElementById('todayEvents');
+    const busyDaysEl = document.getElementById('busyDays');
+
+    if (totalEventsEl) totalEventsEl.textContent = totalEvents;
+    if (completedEventsEl) completedEventsEl.textContent = completedEvents;
+    if (todayEventsEl) todayEventsEl.textContent = todayEvents;
+    if (busyDaysEl) busyDaysEl.textContent = busyDays;
 }
 
 function getNextEvent() {
     const now = new Date();
-    const currentDay = now.getDay(); // 0 = dimanche, 1 = lundi, etc.
-    const currentTime = now.getHours() * 60 + now.getMinutes(); // Minutes depuis minuit
+    const currentDay = now.getDay();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
 
     const dayOrder = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
     const currentDayName = dayOrder[currentDay];
@@ -287,10 +428,9 @@ function getNextEvent() {
     let nextEvent = null;
     let minTimeDiff = Infinity;
 
-    // Parcourir tous les événements
     Object.keys(events).forEach(day => {
         events[day].forEach(event => {
-            if (event.completed) return; // Ignorer les événements terminés
+            if (event.completed) return;
 
             const eventTime = parseInt(event.startTime.split(':')[0]) * 60 +
                 parseInt(event.startTime.split(':')[1]);
@@ -299,16 +439,14 @@ function getNextEvent() {
             let timeDiff;
 
             if (dayIndex === currentDay) {
-                // Même jour
                 if (eventTime > currentTime) {
                     timeDiff = eventTime - currentTime;
                 } else {
-                    timeDiff = (7 * 24 * 60) + eventTime - currentTime; // Semaine suivante
+                    timeDiff = (7 * 24 * 60) + eventTime - currentTime;
                 }
             } else {
-                // Autre jour
                 let dayDiff = dayIndex - currentDay;
-                if (dayDiff < 0) dayDiff += 7; // Semaine suivante
+                if (dayDiff < 0) dayDiff += 7;
 
                 timeDiff = (dayDiff * 24 * 60) + eventTime - currentTime;
             }
@@ -328,7 +466,7 @@ function updateNextEvent() {
     const indicator = document.getElementById('nextEventIndicator');
     const content = document.getElementById('nextEventContent');
 
-    if (nextEvent) {
+    if (nextEvent && indicator && content) {
         const dayNames = {
             'lundi': 'Lundi',
             'mardi': 'Mardi',
@@ -339,7 +477,6 @@ function updateNextEvent() {
             'dimanche': 'Dimanche'
         };
 
-        // Calculer le temps restant
         const hours = Math.floor(nextEvent.timeDiff / 60);
         const minutes = nextEvent.timeDiff % 60;
         let timeText;
@@ -355,13 +492,13 @@ function updateNextEvent() {
         }
 
         content.innerHTML = `
-                    <div><strong>${nextEvent.title}</strong></div>
-                    <div>${dayNames[nextEvent.day]} ${nextEvent.startTime} - ${nextEvent.endTime}</div>
-                    <div class="next-event-time">${timeText}</div>
-                `;
+            <div><strong>${nextEvent.title}</strong></div>
+            <div>${dayNames[nextEvent.day]} ${nextEvent.startTime} - ${nextEvent.endTime}</div>
+            <div class="next-event-time">${timeText}</div>
+        `;
 
         indicator.style.display = 'block';
-    } else {
+    } else if (indicator) {
         indicator.style.display = 'none';
     }
 }
@@ -371,7 +508,7 @@ function saveSchedule() {
         events: events,
         eventIdCounter: eventIdCounter,
         savedAt: new Date().toISOString(),
-        version: "1.0"
+        version: "1.1"
     };
 
     const dataStr = JSON.stringify(scheduleData, null, 2);
@@ -380,12 +517,22 @@ function saveSchedule() {
     const link = document.createElement('a');
     link.href = URL.createObjectURL(dataBlob);
     link.download = `emploi-du-temps-${new Date().toISOString().split('T')[0]}.json`;
+    
+    // Pour mobile, déclencher le téléchargement différemment
+    if ('ontouchstart' in window) {
+        document.body.appendChild(link);
+    }
+    
     link.click();
 
-    // Nettoyer l'URL
-    setTimeout(() => URL.revokeObjectURL(link.href), 100);
+    setTimeout(() => {
+        URL.revokeObjectURL(link.href);
+        if (link.parentNode) {
+            link.parentNode.removeChild(link);
+        }
+    }, 100);
 
-    console.log('Emploi du temps sauvegardé avec succès !');
+    showNotification('Emploi du temps sauvegardé avec succès !', 'success');
 }
 
 function loadSchedule(event) {
@@ -393,7 +540,7 @@ function loadSchedule(event) {
     if (!file) return;
 
     if (file.type !== 'application/json') {
-        console.Log('Veuillez sélectionner un fichier JSON valide');
+        showNotification('Veuillez sélectionner un fichier JSON valide', 'error');
         return;
     }
 
@@ -402,12 +549,10 @@ function loadSchedule(event) {
         try {
             const scheduleData = JSON.parse(e.target.result);
 
-            // Vérifier la structure des données
             if (!scheduleData.events || typeof scheduleData.events !== 'object') {
                 throw new Error('Format de fichier invalide');
             }
 
-            // Demander confirmation avant de remplacer
             const totalCurrentEvents = Object.values(events).reduce((sum, dayEvents) => sum + dayEvents.length, 0);
             if (totalCurrentEvents > 0) {
                 if (!confirm('Cela remplacera votre emploi du temps actuel. Voulez-vous continuer ?')) {
@@ -415,45 +560,74 @@ function loadSchedule(event) {
                 }
             }
 
-            // Charger les données
             events = scheduleData.events || {};
             eventIdCounter = scheduleData.eventIdCounter || 0;
 
-            // Rafraîchir l'affichage
             renderEvents();
             updateStats();
             updateNextEvent();
 
-            alert(`Emploi du temps chargé avec succès !\nSauvegardé le: ${scheduleData.savedAt ? new Date(scheduleData.savedAt).toLocaleString('fr-FR') : 'Date inconnue'}`);
+            showNotification(
+                `Emploi du temps chargé avec succès !\nSauvegardé le: ${scheduleData.savedAt ? new Date(scheduleData.savedAt).toLocaleString('fr-FR') : 'Date inconnue'}`,
+                'success'
+            );
 
         } catch (error) {
-            console.log('Erreur lors du chargement du fichier: ' + error.message);
+            showNotification('Erreur lors du chargement du fichier: ' + error.message, 'error');
         }
     };
 
     reader.readAsText(file);
-
-    // Réinitialiser l'input file
     event.target.value = '';
 }
 
-// Gestion des couleurs
+// Initialisation améliorée pour mobile
 document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.color-option').forEach(option => {
-        option.addEventListener('click', function () {
-            document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
-            this.classList.add('selected');
-            selectedColor = this.dataset.color;
-        });
-    });
-});
-
-// Initialiser l'application
-document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM chargé, initialisation...'); // Debug
+    
+    // Initialiser l'interface
     initializeSchedule();
     updateStats();
     updateNextEvent();
     
+    // Gestionnaire pour le bouton d'ajout d'événement
+    const addEventBtn = document.getElementById('addEventBtn');
+    if (addEventBtn) {
+        console.log('Bouton addEvent trouvé, ajout des gestionnaires...'); // Debug
+        addTouchClickHandler(addEventBtn, addEvent);
+    } else {
+        console.error('Bouton addEventBtn non trouvé'); // Debug
+    }
+    
+    // Gestionnaire pour le bouton de sauvegarde
+    const saveBtn = document.getElementById('saveBtn');
+    if (saveBtn) {
+        addTouchClickHandler(saveBtn, saveSchedule);
+    }
+    
+    // Gestionnaire pour le bouton d'effacement
+    const clearBtn = document.getElementById('clearBtn');
+    if (clearBtn) {
+        addTouchClickHandler(clearBtn, clearSchedule);
+    }
+    
+    // Gestionnaire pour le sélecteur de couleurs
+    document.querySelectorAll('.color-option').forEach(option => {
+        addTouchClickHandler(option, function() {
+            document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+            option.classList.add('selected');
+            selectedColor = option.dataset.color;
+        });
+    });
+    
+    // Gestionnaire pour le chargement de fichier
+    const loadInput = document.getElementById('loadInput');
+    if (loadInput) {
+        loadInput.addEventListener('change', loadSchedule);
+    }
+    
     // Mettre à jour le prochain événement toutes les minutes
     setInterval(updateNextEvent, 60000);
+    
+    console.log('Initialisation terminée'); // Debug
 });
