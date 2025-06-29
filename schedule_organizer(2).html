@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="schedule_organizer.css">
+    <title>Mon Organisateur</title>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📅 Mon Organisateur</h1>
+            <p>Planifiez votre semaine efficacement</p>
+        </div>
+
+        <div class="controls">
+            <div class="form-group">
+                <input type="text" id="eventTitle" placeholder="Titre de l'événement" required>
+                <input type="time" id="startTime" required>
+                <input type="time" id="endTime" required>
+                <button class="btn btn-primary" onclick="addEvent()">Ajouter</button>
+            </div>
+            
+            <div class="form-group">
+                <label style="font-weight: 600; margin-right: 15px;">Sélectionner les jours :</label>
+                <div class="days-selector">
+                    <label><input type="checkbox" value="lundi"> Lundi</label>
+                    <label><input type="checkbox" value="mardi"> Mardi</label>
+                    <label><input type="checkbox" value="mercredi"> Mercredi</label>
+                    <label><input type="checkbox" value="jeudi"> Jeudi</label>
+                    <label><input type="checkbox" value="vendredi"> Vendredi</label>
+                    <label><input type="checkbox" value="samedi"> Samedi</label>
+                    <label><input type="checkbox" value="dimanche"> Dimanche</label>
+                </div>
+            </div>
+            
+            <div class="color-picker">
+                <div class="color-option selected" style="background: linear-gradient(45deg, #667eea, #764ba2)" data-color="default"></div>
+                <div class="color-option" style="background: linear-gradient(45deg, #ff6b6b, #ee5a52)" data-color="red"></div>
+                <div class="color-option" style="background: linear-gradient(45deg, #51cf66, #40c057)" data-color="green"></div>
+                <div class="color-option" style="background: linear-gradient(45deg, #ffd43b, #fab005)" data-color="yellow"></div>
+                <div class="color-option" style="background: linear-gradient(45deg, #339af0, #228be6)" data-color="blue"></div>
+                <div class="color-option" style="background: linear-gradient(45deg, #845ef7, #7048e8)" data-color="purple"></div>
+            </div>
+            
+            <div style="margin-top: 15px;">
+                <button class="btn btn-danger" onclick="clearSchedule()">Effacer tout</button>
+                <button class="btn btn-primary" onclick="saveSchedule()" style="margin-left: 10px;">💾 Sauvegarder</button>
+                <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()" style="margin-left: 10px;">📁 Charger</button>
+                <input type="file" id="fileInput" accept=".json" style="display: none;" onchange="loadSchedule(event)">
+            </div>
+        </div>
+
+        <div id="nextEventIndicator" class="next-event-indicator" style="display: none;">
+            <div class="next-event-title">🎯 Prochain événement</div>
+            <div id="nextEventContent"></div>
+        </div>
+
+        <div class="schedule-grid" id="scheduleGrid">
+            <!-- Grille générée par JavaScript -->
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalEvents">0</div>
+                <div class="stat-label">Événements totaux</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="completedEvents">0</div>
+                <div class="stat-label">Événements terminés</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="todayEvents">0</div>
+                <div class="stat-label">Événements aujourd'hui</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="busyDays">0</div>
+                <div class="stat-label">Jours occupés</div>
+            </div>
+        </div>
+    </div>
+<script src="schedule_organizer.js"></script>
+</body>
+</html>

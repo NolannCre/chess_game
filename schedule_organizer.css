@@ -1,0 +1,468 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: #333;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 30px;
+    color: white;
+}
+
+.header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.controls {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 20px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.form-group {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.form-group input,
+.form-group select {
+    padding: 12px;
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-danger {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+    color: white;
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+}
+
+.schedule-grid {
+    display: grid;
+    grid-template-columns: 80px repeat(7, 1fr);
+    gap: 2px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.time-header,
+.day-header {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    padding: 15px 10px;
+    text-align: center;
+    font-weight: 600;
+    border-radius: 8px;
+}
+
+.time-slot {
+    background: #f8f9fa;
+    padding: 10px 5px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 6px;
+    color: #666;
+}
+
+/* CORRECTION MAJEURE : Cellules de l'emploi du temps */
+.schedule-cell {
+    background: white;
+    min-height: 50px;
+    max-height: 50px;
+    /* Hauteur fixe pour éviter l'extension */
+    border-radius: 8px;
+    position: relative;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    overflow: visible;
+    /* Permet aux événements d'être visibles */
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.schedule-cell:hover {
+    border-color: #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+/* CORRECTION MAJEURE : Événements en blocs */
+.event {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    padding: 4px 6px;
+    margin: 0;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    /* IMPORTANT : Taille fixe pour chaque bloc */
+    height: 46px;
+    min-height: 46px;
+    max-height: 46px;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.event:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 5;
+}
+
+.event.completed {
+    opacity: 0.6;
+    background: linear-gradient(45deg, #28a745, #20c997) !important;
+}
+
+.event.completed .event-title {
+    text-decoration: line-through;
+}
+
+.event.next-event {
+    animation: pulse 2s infinite;
+    border: 2px solid #ffd700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Styles spécifiques pour les blocs d'événements */
+.event-block {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(5px);
+}
+
+.event-title {
+    font-weight: 600;
+    margin-bottom: 1px;
+    font-size: 11px;
+    line-height: 1.2;
+}
+
+.event-title-small {
+    font-weight: 500;
+    font-size: 10px;
+    line-height: 1.1;
+    opacity: 0.9;
+}
+
+.event-time {
+    font-size: 9px;
+    opacity: 0.8;
+    line-height: 1.1;
+}
+
+.event-time-end {
+    font-size: 9px;
+    opacity: 0.8;
+    font-style: italic;
+}
+
+.event-continuation {
+    text-align: center;
+    font-size: 12px;
+    opacity: 0.7;
+    font-weight: bold;
+}
+
+.event-checkbox {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    cursor: pointer;
+    z-index: 10;
+    accent-color: #ffd700;
+}
+
+.event-content {
+    margin-left: 16px;
+    margin-right: 16px;
+    overflow: hidden;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.event-content.continuation {
+    margin-left: 4px;
+    margin-right: 4px;
+    text-align: center;
+}
+
+.event-delete {
+    position: absolute;
+    top: 1px;
+    right: 2px;
+    background: rgba(255, 107, 107, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
+    cursor: pointer;
+    display: none;
+    z-index: 10;
+    line-height: 1;
+}
+
+.event:hover .event-delete {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.next-event-indicator {
+    background: rgba(255, 215, 0, 0.95);
+    color: #333;
+    padding: 15px 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 16px rgba(255, 215, 0, 0.3);
+    backdrop-filter: blur(10px);
+    text-align: center;
+    font-weight: 600;
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from {
+        box-shadow: 0 4px 16px rgba(255, 215, 0, 0.3);
+    }
+
+    to {
+        box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6);
+    }
+}
+
+.next-event-indicator .next-event-title {
+    font-size: 1.1rem;
+    margin-bottom: 5px;
+}
+
+.next-event-indicator .next-event-time {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.days-selector {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.days-selector label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+    border: 2px solid transparent;
+}
+
+.days-selector label:hover {
+    background: #e9ecef;
+}
+
+.days-selector input[type="checkbox"]:checked+span,
+.days-selector label:has(input[type="checkbox"]:checked) {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    border-color: #667eea;
+}
+
+.days-selector input[type="checkbox"] {
+    margin: 0;
+}
+
+.color-option {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.color-picker {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.color-option:hover,
+.color-option.selected {
+    border-color: #333;
+    transform: scale(1.1);
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #667eea;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* Responsive design amélioré */
+@media (max-width: 768px) {
+    .schedule-grid {
+        font-size: 10px;
+        grid-template-columns: 60px repeat(7, 1fr);
+    }
+
+    .schedule-cell {
+        min-height: 40px;
+        max-height: 40px;
+    }
+
+    .event {
+        height: 36px;
+        min-height: 36px;
+        max-height: 36px;
+        font-size: 10px;
+        padding: 2px 4px;
+    }
+
+    .event-title {
+        font-size: 10px;
+    }
+
+    .event-time {
+        font-size: 8px;
+    }
+
+    .form-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .form-group input,
+    .form-group select {
+        width: 100%;
+    }
+}
+
+/* Corrections pour les couleurs des événements */
+.event[style*="background: linear-gradient(45deg, #ff6b6b, #ee5a52)"] {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a52) !important;
+}
+
+.event[style*="background: linear-gradient(45deg, #51cf66, #40c057)"] {
+    background: linear-gradient(45deg, #51cf66, #40c057) !important;
+}
+
+.event[style*="background: linear-gradient(45deg, #ffd43b, #fab005)"] {
+    background: linear-gradient(45deg, #ffd43b, #fab005) !important;
+}
+
+.event[style*="background: linear-gradient(45deg, #339af0, #228be6)"] {
+    background: linear-gradient(45deg, #339af0, #228be6) !important;
+}
+
+.event[style*="background: linear-gradient(45deg, #845ef7, #7048e8)"] {
+    background: linear-gradient(45deg, #845ef7, #7048e8) !important;
+}
