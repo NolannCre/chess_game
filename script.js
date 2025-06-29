@@ -64,17 +64,17 @@ function addEvent() {
     });
 
     if (!title || !startTime || !endTime) {
-        alert('Veuillez remplir tous les champs');
+        console.log('Veuillez remplir tous les champs');
         return;
     }
 
     if (selectedDays.length === 0) {
-        alert('Veuillez sélectionner au moins un jour');
+        colsole.log('Veuillez sélectionner au moins un jour');
         return;
     }
 
     if (startTime >= endTime) {
-        alert('L\'heure de fin doit être après l\'heure de début');
+        console.log('L\'heure de fin doit être après l\'heure de début');
         return;
     }
 
@@ -385,7 +385,7 @@ function saveSchedule() {
     // Nettoyer l'URL
     setTimeout(() => URL.revokeObjectURL(link.href), 100);
 
-    alert('Emploi du temps sauvegardé avec succès !');
+    console.log('Emploi du temps sauvegardé avec succès !');
 }
 
 function loadSchedule(event) {
@@ -393,7 +393,7 @@ function loadSchedule(event) {
     if (!file) return;
 
     if (file.type !== 'application/json') {
-        alert('Veuillez sélectionner un fichier JSON valide');
+        console.Log('Veuillez sélectionner un fichier JSON valide');
         return;
     }
 
@@ -427,7 +427,7 @@ function loadSchedule(event) {
             alert(`Emploi du temps chargé avec succès !\nSauvegardé le: ${scheduleData.savedAt ? new Date(scheduleData.savedAt).toLocaleString('fr-FR') : 'Date inconnue'}`);
 
         } catch (error) {
-            alert('Erreur lors du chargement du fichier: ' + error.message);
+            console.log('Erreur lors du chargement du fichier: ' + error.message);
         }
     };
 
